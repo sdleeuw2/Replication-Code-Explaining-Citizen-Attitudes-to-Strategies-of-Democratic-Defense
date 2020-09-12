@@ -1,0 +1,26 @@
+---
+title: "2. Summary Statistics"
+---
+
+```{r}
+source("source_file.R")
+```
+
+
+```{r}
+# Continuous variables have been centered around the country-mean and rescaled from 0-1
+rbind(data.frame(variable = "Party Ban", describe(df$prtyban_i)),
+      data.frame(variable = "Age", describe(df$agea_r)), 
+      data.frame(variable = "Trust", describe(df$trust_r)),
+      data.frame(variable = "Education", describe(df$eduyrs_r)),
+      data.frame(variable = "Proportionality", describe(df$proportionality_r)))
+
+# Categorical variables
+rbind(data.frame(variable = "Legal Tradition", table(df$tradition)),
+      data.frame(variable = "Legacy", table(df$legacy)),
+      data.frame(variable = "Socialization", table(df$soc)),
+      data.frame(variable = "Radicalism", table(df$rad)),
+      data.frame(variable = "Wave", table(df$wave)),
+      data.frame(variable = "Gender", table(df$gndr)))
+```
+

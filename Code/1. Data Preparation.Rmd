@@ -1,0 +1,93 @@
+---
+title: "1. Data Preparation"
+---
+
+```{r}
+source("source_file.R")
+```
+
+```{r}
+install_and_load_if_absent = function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){ # require checks if package loads
+      install.packages( i , dependencies = TRUE ) # if not (FALSE), then install package i
+      require( i , character.only = TRUE ) # and load package
+    }}}
+
+# Install packages
+install_and_load_if_absent(
+    c("haven","readxl","lme4", "boot", "lmerTest", "nlme", 
+      "psych", "plyr", "tidyverse", "nlme", "ltm"))
+```
+
+Individual-level data:
+```{r}
+df = read_dta(paste0(datadir, "ess.dta")) 
+# split Germany into Eastern and Western part
+df$cntry[df$intewde==1] = "East Germany" 
+df$cntry[df$intewde==2] = "West Germany" 
+df$wave = (df$essround*2) + 2000
+df$countrywave = paste0(df$cntry, df$wave)
+```
+
+Country-level data:
+```{r}
+agg = read_xlsx(paste0(datadir,"countrydata.xlsx"))
+agg$countrywave = paste0(agg$country, agg$year)
+df = merge(df, agg, by = c("countrywave"))
+```
+
+The **dependent variable** of this study is support for party bans. The initial question was phrased as "Do you degree with the following statement: parties that wish to overthrow democracy should be banned." The scale of this question ranged from 1 "compeletely agree" to 5 "completely disagree". This scale was reversed so that 0 denotes complete disagreement and 4 complete agreement. 
+```{r}
+df$prtyban_i = 5-(as.numeric(df$prtyban)) # reverse scale
+```
+
+Six hypotheses were formulated, each of which with another **independent variable**: legal tradition (H1), authoritarian past (H2), electoral entry barriers (H3), authoritarian tendencies (H4), ideological extremism (H5) and legal trust (H6). In addition, several individual level control variables were added: years of education, gender, age and wave. These chunks define the variables and their measurement level.
+```{r}
+# COUNTRY-LEVEL
+df$tradition = factor(df$tradition) # H1: Factor legal traditions
+df$legacy = factor(df$legacy) # H2: Factor legacy
+df$proportionality = as.numeric(df$proportionality) # H3: Numeric proportionality 
+
+# INDIVIDUAL-LEVEL
+df$form = df$yrbrn + 18 # H4: Factor authoritarian tendencies
+df$soc = 0 
+df$soc[df$form>df$end] = 1  
+df$soc = factor(df$soc, levels = c(0,1), labels = c("During", "After")) 
+df$rad[df$lrscale <= 5 & df$lrscale >=5] = 1 # H5: Factor ideological radicalism
+df$rad[df$lrscale <= 1 & df$lrscale >=0] = 2
+df$rad[df$lrscale <= 4 & df$lrscale >=2] = 3
+df$rad[df$lrscale <= 8 & df$lrscale >=6] = 4
+df$rad[df$lrscale <= 10 & df$lrscale >=9] = 5
+df$rad = factor(df$rad, levels = c(1,2,3,4,5), labels = c("Center", "Far Left", "Center Left", "Center Right", "Far Right"))
+df$trust = rowMeans(cbind(df$trstlgl,df$trstplc,df$trstprl,df$trstplt,df$trstprt), na.rm=TRUE) # H6: Factor institutional Trust
+
+# CONTROLS
+df$wave = factor(df$essround, labels = c("Wave 1", "Wave 2", "Wave 3", "Wave 4", "Wave 5")) # wave
+df$gndr = factor(df$gndr, labels = c("Male", "Female")) # gender
+df = ddply(df,.(cntry),transform,lrscale_m = mean(lrscale, na.rm=TRUE))
+df = ddply(df,.(cntry),transform, agea_m = mean(agea, na.rm=TRUE))
+df = ddply(df,.(cntry),transform,trust_m = mean(trust, na.rm=TRUE))
+df = ddply(df,.(cntry),transform,eduyrs_m = mean(eduyrs, na.rm=TRUE))
+df$lrscale_c = (df$lrscale - df$lrscale_m) # centered variables
+df$agea_c = (df$agea - df$agea_m)
+df$trust_c = (df$trust - df$trust_m)
+df$eduyrs_c = (df$eduyrs - df$eduyrs_m) 
+df$agea_r = (df$agea_c - min(df$agea_c, na.rm = TRUE)) / max((df$agea_c - min(df$agea_c, na.rm = TRUE)), na.rm = TRUE) # rescaled variables
+df$trust_r = (df$trust_c - min(df$trust_c, na.rm = TRUE)) / max((df$trust_c - min(df$trust_c, na.rm = TRUE)), na.rm = TRUE)
+df$eduyrs_r = (df$eduyrs_c - min(df$eduyrs_c, na.rm = TRUE)) / max((df$eduyrs_c - min(df$eduyrs_c, na.rm = TRUE)), na.rm = TRUE)
+df$proportionality_4 = (df$proportionality - min(df$proportionality, na.rm = TRUE)) / max((df$proportionality - min(df$proportionality, na.rm = TRUE)), na.rm = TRUE)
+```
+
+Reliability mean-scale trust:
+```{r}
+cronbach.alpha(data = data.frame(
+    cbind(df$trstlgl,df$trstplc,df$trstprl,df$trstplt,df$trstprt)), # items trust
+    standardized = FALSE, CI = FALSE, probs = c(0.025, 0.975), B = 1000, na.rm = TRUE) # 95% CI
+```
+
+Save to dta:
+```{r}
+
+```
+

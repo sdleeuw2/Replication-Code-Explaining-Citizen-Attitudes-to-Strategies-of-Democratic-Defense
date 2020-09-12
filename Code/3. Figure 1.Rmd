@@ -1,0 +1,68 @@
+---
+title: "Figure 1"
+---
+
+```{r}
+source("source_file.R")
+```
+
+Download and import packages:
+```{r}
+install_and_load_if_absent = function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){ # require checks if package loads
+      install.packages( i , dependencies = TRUE ) # if not (FALSE), then install package i
+      require( i , character.only = TRUE ) # and load package
+    }}}
+
+# Install packages
+install_and_load_if_absent(
+    c("ggplot2","dplyr","lattice", "stringr", "ggpubr", "heplots", "likert"))
+```
+
+```{r}
+likert_yes = read.csv(paste0(datadir, "data_figure_no_partyban.csv"),sep = ",")
+likert_no = read.csv(paste0(datadir, "data_figure_partyban.csv"), sep = ",")
+```
+
+```{r}
+for (i in c(1:14)){
+  likert_no[,i] = factor(likert_no[,i], levels = c(1:5), labels = c("Strongly Disagree", "Disagree", "Agree Nor Disagree", "Agree", "Strongly Agree"), ordered = TRUE)
+}
+
+for (i in c(1:10)){
+  likert_yes[,i] = factor(likert_yes[,i], levels = c(1:5), labels = c("Strongly Disagree", "Disagree", "Agree Nor Disagree", "Agree", "Strongly Agree"), ordered = TRUE)
+}
+```
+
+```{r}
+likert_no = likert(likert_no)
+likert_yes = likert(likert_yes)
+```
+
+```{r}
+p1 = plot(likert_no, legend.position="right") + 
+  scale_fill_manual(
+    breaks = c("Strongly Agree", "Agree", "Agree Nor Disagree", "Disagree", "Strongly Disagree"), 
+    values = c("grey90", "grey80", "grey60", "grey40", "grey20")) + 
+  theme_minimal() + 
+  theme(axis.text = element_text(colour="black", size="10"),
+        legend.title = element_blank()) +
+  facet_grid(. ~ "(a) No Experience with Party Bans")
+
+p2 = plot(likert_yes, legend.position="right") + 
+  theme_minimal() + 
+  scale_fill_manual(
+    breaks = c("Strongly Agree", "Agree", "Agree Nor Disagree", "Disagree", "Strongly Disagree"), 
+    values = c("grey90", "grey80", "grey60", "grey40", "grey20")) + 
+  theme_minimal() + 
+  theme(axis.text = element_text(colour="black", size="10"),
+        legend.title = element_blank()) +
+  facet_grid(. ~ "(b) Prior Experience with Party Bans")
+
+ggarrange(p1, p2, nrow = 2, common.legend = TRUE, heights = c(1, 0.8), legend = "bottom") 
+dev.copy(png,paste0(figdir, "Figure 1.png"), height = 5000, width = 4000, res = 500)
+dev.off()
+```
+
+

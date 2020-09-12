@@ -1,0 +1,47 @@
+---
+title: "Figure 2"
+---
+
+```{r}
+source('source_file.R')
+results = readxl::read_xlsx(paste0(tabdir, "Table 2.xlsx"))
+```
+
+
+```{r}
+results$varorder = plyr::revalue(factor(results$variable), c(
+     "Intercept" = "1", "Age" = "2", "Gender: Female" = "3", "Education" = "4",
+     "Proportionality" = "5", "Transition: 1990s" = "6", "Transition: 1970s" = "7",
+     "Transition: 1940s" = "8", "Tradition: Substantive" = "9"
+    ))
+results$varorder = as.numeric(as.character(results$varorder))
+
+results$coeff = as.numeric(results$coeff)
+results$lb = as.numeric(results$lb)
+results$ub = as.numeric(results$ub)
+results$coeff = (results$lb + results$ub) / 2 
+
+results$modelname = paste0(results$modelname, "\nICC = ", results$icc)
+```
+
+Coefficient plot:
+```{r}
+results = results[order(results$varorder),]
+varnames = unique(results$variable)
+
+ggplot(data = results, aes(x = coeff, y = varorder)) + 
+  geom_vline(xintercept = 0, color = "grey70", size = 0.5) + 
+  geom_point(aes(x = coeff, y = varorder), size = 1) + 
+  geom_segment(aes(x = lb, xend = ub, y = varorder, yend = varorder)) + 
+  scale_y_continuous(breaks = c(1:(length(varnames))), labels = varnames) + 
+  theme_minimal() + 
+  theme(axis.title = element_blank(), 
+        legend.position = "bottom", legend.title = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        strip.text = element_text(size = 10, lineheight = 1.5, vjust = 1) 
+        ) +
+  facet_wrap(. ~ modelname, nrow = 1)
+
+ggsave(paste0(figdir, "Figure 2.png"), width = 14, height = 7)
+```
+
