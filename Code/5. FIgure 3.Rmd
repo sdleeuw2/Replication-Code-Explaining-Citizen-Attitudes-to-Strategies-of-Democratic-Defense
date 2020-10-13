@@ -22,11 +22,14 @@ results$lb = as.numeric(results$lb)
 results$ub = as.numeric(results$ub)
 results$coeff = (results$lb + results$ub) / 2 
 
+results$model[results$icc == "4.093%"] = "Model 8: Pooled"
+
 results$modelname = paste0(results$model, "\nICC = ", results$icc)
 ```
 
 Coefficient plot:
 ```{r}
+library(ggplot2)
 results = results[order(results$varorder),]
 varnames = unique(results$variable)
 
